@@ -1,0 +1,304 @@
+---
+title: "Homework 2 STAT 5014"
+author: "Shane Bookhultz"
+date: "September 11, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(warn=-1)
+```
+
+## Problem 4
+
+Version control can be very useful in the classroom by letting me revert back to older versions of code and allowing me to experiment with new features. Additionally, using version control, I can share code with my classmates without having to physically be there, and we can work on different versions of our code. Lastly, version control can let me undo any changes I make so instead of making a huge mistake without VC, I can revert my mistakes.
+
+## Problem 5
+
+a. Sensory data from five operators
+
+```{r echo = FALSE}
+
+as.numeric.factor <- function(x) {as.numeric(levels(x))[x]} ##function to convert factor to numeric
+
+operator_data <- read.csv("http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat", sep = " ", header = FALSE)
+
+operator_data <- operator_data[3:nrow(operator_data),]
+
+colnames(operator_data) <- c("Item", "Operator 1", "Operator 2", "Operator 3", "Operator 4", "Operator 5")
+
+operator_data[,1] <- as.numeric.factor(operator_data[,1])
+
+## Remove the first 2 rows because it's just operator and colnames
+
+NR <- nrow(operator_data)
+NC <- ncol(operator_data)
+
+
+for(i in 1:NR) {
+  if(is.na(operator_data[i, NC]) == TRUE) {
+    operator_data_tmp <- operator_data[i, 1:(NC-1)]
+    #operator_data[i,] <- NA
+    operator_data[i, 2:NC] <- operator_data_tmp
+    operator_data[i, 1] <- operator_data[(i-1),1] #which item number
+  }
+}
+
+operator_data$ID <- seq.int(NR) #create an ID variable
+
+operator_data <- operator_data[,c(7,1,2,3,4,5,6)] #reorder columns
+
+NC <- ncol(operator_data)
+
+#summary(operator_data[,3:NC])
+
+knitr::kable(summary(operator_data[,3:NC]), caption="Brain and body weight data summary")
+```
+
+For this dataset, I removed the first two rows in the original dataset as both rows had either "Operator" in them or a non-descriptive header. From there, I converted the Item column from a factor into a numeric variable to make further cleaning easier. Next, I moved over rows that didn't have an item number over 1 column, and then correctly renumbered the row. Lastly, I implemented an ID variable to identify each result, and moved the rows so the ID was in front, being the identifing variable. 
+
+Some issues with the data include missing data, incorrect data in columns, and a mixture of number and character headers. 
+
+b. Gold Medal performance for Olympic Men's Long Jump
+
+```{r echo=FALSE}
+
+as.numeric.factor <- function(x) {as.numeric(levels(x))[x]} ##function to convert factor to numeric
+
+jump_data <- read.csv("http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/LongJumpData.dat", sep=" ", header = FALSE)
+
+# remove first row, just headers, only 8 columns
+jump_data <- jump_data[-1,1:8] 
+
+jump_data[,1] <- as.numeric.factor(jump_data[,1])
+jump_data[,2] <- as.numeric.factor(jump_data[,2])
+jump_data[,3] <- as.numeric.factor(jump_data[,3])
+jump_data[,4] <- as.numeric.factor(jump_data[,4])
+jump_data[,5] <- as.numeric.factor(jump_data[,5])
+jump_data[,6] <- as.numeric.factor(jump_data[,6])
+jump_data[,7] <- as.numeric.factor(jump_data[,7])
+jump_data[,8] <- as.numeric.factor(jump_data[,8])
+
+jump_data1 <- jump_data[,1:2]
+jump_data2 <- jump_data[,3:4]
+jump_data3 <- jump_data[,5:6]
+jump_data4 <- jump_data[,7:8]
+
+colnames(jump_data1) <- c("Year", "Long Jump")
+colnames(jump_data2) <- c("Year", "Long Jump")
+colnames(jump_data3) <- c("Year", "Long Jump")
+colnames(jump_data4) <- c("Year", "Long Jump")
+
+library(dplyr)
+
+jumpfinal <- full_join(jump_data1, jump_data2, by=c("Year","Long Jump"))
+
+jumpfinal <- full_join(jumpfinal, jump_data3, by=c("Year","Long Jump"))
+
+jumpfinal <- full_join(jumpfinal, jump_data4, by=c("Year","Long Jump"))
+
+knitr::kable(summary(jumpfinal), caption="Long Jump data summary")
+
+```
+
+In this Gold Medal dataset, I had seperate the columns of the data, as the variables year and long jump were repeated horizontally. I also had to convert the variables to numeric so I could create a summary table. After I seperated the columns, I then full joined them so I could create a dataset with only 2 variables.
+
+One issue with the data was multiple repeated variables.
+
+c. Brain weight (g) and body weight (kg) for 62 species.
+
+```{r echo = FALSE}
+
+library(dplyr)
+
+brainbody <- read.csv("http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat", sep = " ", header = TRUE)
+
+# Now I know if I include the header, it won't be factor data
+
+brainbody <- brainbody[,1:6] #reducing columns
+
+colnames(brainbody) <- c("Body Weight", "Brain Weight", "Body Weight", "Brain Weight", "Body Weight", "Brain Weight")
+
+brainbody1 <- brainbody[,1:2]
+brainbody2 <- brainbody[,3:4]
+brainbody3 <- brainbody[,5:6]
+
+brainbodyfinal <- full_join(brainbody1, brainbody2, by=c("Body Weight","Brain Weight"))
+
+brainbodyfinal <- full_join(brainbodyfinal, brainbody3, by=c("Body Weight","Brain Weight"))
+
+brainbodyfinal <- brainbodyfinal[-nrow(brainbodyfinal),]
+
+knitr::kable(summary(brainbodyfinal), caption="Brain and body weight data summary")
+```
+
+In the Brain and body weight dataset, the main issue was again, like the last one, was that the variables were seperated into 3 columns of the same variable. So again I seperated the columns and then binded the rows to create a dataset of 2 variables. 
+
+Main issue was repeated variables
+
+d. Triplicate measurements of tomato yield for two varieties of tomatoes at three planting densities
+
+```{r echo = FALSE}
+
+as.numeric.factor <- function(x) {as.numeric(levels(x))[x]} ##function to convert factor to numeric
+
+tomato <- read.csv("http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/tomato.dat", sep = " ", header=FALSE)
+
+# remove the first two rows, they're just headers
+
+tomato <- tomato[3:4,]
+
+tomato <- tomato[,c(1,4,8,11,12,15,18)]
+
+# now I need to parse the cells based on a comma
+
+First_tomato1 <- as.numeric(unlist(strsplit(toString(tomato[1,5]), ",")))
+First_tomato2 <- as.numeric(unlist(strsplit(toString(tomato[1,6]), ",")))
+First_tomato3 <- as.numeric(unlist(strsplit(toString(tomato[1,7]), ",")))
+
+Second_tomato1 <- as.numeric(unlist(strsplit(toString(tomato[2,2]), ",")))
+Second_tomato2 <- as.numeric(unlist(strsplit(toString(tomato[2,3]), ",")))
+Second_tomato3 <- as.numeric(unlist(strsplit(toString(tomato[2,4]), ",")))
+
+# These above were used to convert the cells into strings than numeric vectors
+
+#I'll just make a new dataset
+
+tomatodata <- cbind(First_tomato1[1], First_tomato2[1], First_tomato3[1]) #10000 for 1st tomato
+
+tomato1name <- "Ife\\#1"
+tomato2name <- "PusaEarlyDwarf"
+
+finaltom <- matrix(nrow=6, ncol=4)
+
+for(iter in 1:6) {
+  if(iter <= 3){
+    finaltom[iter, ] <- cbind(tomato1name, First_tomato1[iter], First_tomato2[iter], First_tomato3[iter])
+  }
+  else {
+    listiter <- iter-3
+    finaltom[iter, ] <- cbind(tomato2name, Second_tomato1[listiter], Second_tomato2[listiter], Second_tomato3[listiter])
+  }
+} #this is for the first 3 rows
+
+colnames(finaltom) <- c("Tomato_Species", "10000_density", "20000_density", "30000_density")
+
+class(finaltom[,2])
+
+#finaltom[,2] <- as.numeric(levels(finaltom[,2]))[as.integer(finaltom[,2])] # 10000
+#finaltom[,3] <- as.numeric.factor(finaltom[,3]) # 20000
+#finaltom[,4] <- as.numeric.factor(finaltom[,4]) # 30000
+
+#summary(finaltom)
+
+knitr::kable(summary(finaltom), caption="Brain and body weight data summary")
+
+```
+
+This dataset was the trickiest in terms of data manipulation. The problems with this dataset were creating consistent density columns, creating a tomato species column, and splitting up the comma seperated cells. I took apart the comma seperated cells, and put them into a numeric vector. I created a tomato matrix and then iterating through a for loop I put each of the seperate components of the numeric vectors and put them into the tomato matrix, corresponding the correct species and density. 
+
+The issues with this dataset were correcting rows and columns, multiple values in a single cell, and indentifying unique cases.
+
+# Problem 6
+
+Find a plant dataset
+
+```{r echo = FALSE}
+
+library(swirl)
+
+# Path to data
+.datapath <- file.path(path.package('swirl'), 'Courses',
+'R_Programming_E', 'Looking_at_Data',
+'plant-data.txt')
+
+# Read in data
+
+plants <- read.csv(.datapath, strip.white=TRUE, na.strings="")
+
+# Remove annoying columns
+
+.cols2rm <- c('Accepted.Symbol', 'Synonym.Symbol')
+
+plants <- plants[, !(names(plants) %in% .cols2rm)]
+
+# Make names pretty
+
+names(plants) <- c('Scientific_Name', 'Duration', 'Active_Growth_Period',
+'Foliage_Color', 'pH_Min', 'pH_Max',
+'Precip_Min', 'Precip_Max',
+'Shade_Tolerance', 'Temp_Min_F')
+
+plants$pH_Median <- (plants$pH_Max + plants$pH_Min) /2
+
+library(dplyr)
+
+tidy_tomato <- filter(plants, is.na(pH_Median) == FALSE, is.na(Foliage_Color) == FALSE)
+
+regplants <- (tidy_tomato$pH_Median~tidy_tomato$Foliage_Color)
+
+linearmod <- lm(regplants)
+lm1<-summary(linearmod)
+
+#### Report coefficients and anova results in a table
+
+library(stargazer)
+
+stargazer(lm(regplants), type = "text")
+
+capture.output(summary(aov(regplants)))
+
+```
+
+# Problem 7
+
+```{r echo = FALSE}
+
+# Load all data into R
+
+Car_Gebreken_raw <- read.csv("Open_Data_RDW__Gebreken.csv",stringsAsFactors = F, nrows=200, header=T,quote = '"')
+
+
+Car_Geconstat_raw <- read.csv("Open_Data_RDW__Geconstateerde_Gebreken.csv", stringsAsFactors = F, nrows=200, header=T)
+
+Car_Person_raw <- read.csv("Personenauto_basisdata.csv",stringsAsFactors = F, nrows=200, header=T)
+
+Car_Gebreken_raw.colclass <- sapply(Car_Gebreken_raw, class)
+Car_Geconstat_raw.colclass <- sapply(Car_Geconstat_raw, class)
+Car_Person_raw.colclass <- sapply(Car_Person_raw, class)
+
+print("Gebreken")
+print(Car_Gebreken_raw.colclass)
+
+print("Geconstat")
+print(Car_Geconstat_raw.colclass)
+
+print("Personen")
+print(Car_Person_raw.colclass)
+# time to merge the data sets
+
+
+#this had the defect code and description
+# library(data.table)
+# 
+# 
+# Car_Gebreken_select <- fread(input = "Open_Data_RDW__Gebreken.csv", header = T, select=c(1,6), showProgress=F)
+#     
+# #this has the license plate, inspection date and defect code
+#     
+# Car_Geconstat_select <- fread(input = "Open_Data_RDW__Geconstateerde_Gebreken.csv", header=T, select=c(1,3,5),showProgress=F)
+# 
+# #this has the license plate, make and model of vehicle
+# 
+# Car_Person_select <- fread(input = "Personenauto_basisdata.csv", header=T, showProgress = F, select = c(1,3,4))
+#     
+# Car_Geconstat_select_2017 <- Car_Geconstat_select[grep("2017",Car_Geconstat_select$"Meld datum door keuringsinstantie"),]
+
+## Your GREP and fread functions were not working for me
+########################### 
+
+
+```
+
