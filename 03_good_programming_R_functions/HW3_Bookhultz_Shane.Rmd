@@ -1,0 +1,222 @@
+---
+title: "Homework 3 STAT 5014"
+author: "Shane Bookhultz"
+date: "September 14, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = FALSE}
+
+# This place is for globalized variables and library calls
+
+FilePath6 <- "C:/Users/Shane/Documents/Fall 2017 VT STATS/STAT 5014 - Programming/STAT_5015_homework/03_good_programming_R_functions/HW3_data.rds"
+
+Prob7DataURL <- "http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BloodPressure.dat"
+
+library(tidyr)
+library(dplyr)
+library(vioplot)
+library(Deriv)
+library(data.table)
+
+suppressMessages(library(tidyr))
+suppressMessages(library(dplyr))
+
+```
+
+## Problem 4
+
+My takeaway from the programming style guides is that to make things generally readable, and explain whatever you are doing explicitly if it is not obvious. My coding style implements most of these ideas anyway, but I'm going to try to comment more, utilize spaces more, and name functions/variables better. 
+
+## Problem 5
+
+From the messages in my HW2 code, lintr noticed around 80 errors. Most of them were spacing (with commas and parentheses), words in a variable/function should be seperated with an underscore instead of a dot, removing commented code, and only using double quotes. Honestly, I don't see why it matters using double or single quotes since they both indicate a string, and I'm not sure I should remove commented code if I may need to use it in the future. 
+
+## Problem 6
+
+```{r echo = FALSE}
+
+SumStats <- function(dev1, dev2) {
+  # Creates summary stats for vectors dev1 and dev 2
+  # Specifically creates mean, sd, and correlation
+  #
+  # Arguments:
+  #   dev1: vector
+  #   dev2: another vector
+  # 
+  # Returns:
+  #   A dataframe containing both means, both sd's and the correlation
+  #
+  #
+  mean.dev1 <- mean(dev1)
+  mean.dev2 <- mean(dev2)
+  sd.dev1 <- sd(dev1)
+  sd.dev2 <- sd(dev2)
+  corr.dev <- cor(dev1, dev2)
+  
+  SumStatsDF <- data.frame(mean.dev1, mean.dev2, sd.dev1, sd.dev2, corr.dev)
+
+  return (SumStatsDF)
+}
+
+# Now to read in the RDS file
+
+
+
+ObserversData <- readRDS(FilePath6)
+
+ObsDF <- data.frame()
+ObsList <- list()
+
+for (i in  1:13) {
+   ObserIter <- ObserversData[which(ObserversData$Observer == i), ]
+   ObsDF <- SumStats(ObserIter$dev1, ObserIter$dev2)
+   ObsList[[i]] <- ObsDF
+}
+
+ObsTable <- bind_rows(ObsList)
+
+print(ObsTable)
+
+##### b. Boxplot of all means
+
+par(mfrow = c(1,2))
+boxplot(ObsTable$mean.dev1)
+boxplot(ObsTable$mean.dev2)
+
+##### c. Violin plot of sd of dev 1 and sd of dev2
+
+par(mfrow = c(1,2))
+vioplot(ObsTable$sd.dev1, col = "Red")
+vioplot(ObsTable$sd.dev2, col = "Blue")
+
+#### Bwahaha I made it black so you can't see the boxplot inside
+```
+
+## Problem 7
+
+```{r echo = FALSE}
+
+BPDataInitial <- read.csv(Prob7DataURL,stringsAsFactors = FALSE, sep = " ", header = FALSE)
+
+############# Data cleaning starts here
+
+BPDataInitial <- BPDataInitial[-1,]
+
+# Initial thoughts are to bring in the "days columns" and make them one variable
+# One column for Devices/Doctors (dev1->3, doc1->3)
+# One column for BloodPressure (the value)
+
+# Remove the second day column
+
+BPDataTemp <- BPDataInitial[, -5]
+
+colnames(BPDataTemp) <- BPDataTemp[1, ]
+
+BPDataTemp <- BPDataTemp[-1, ]
+
+# 
+
+DayVec <- rep.int(c(1:15), 6)
+
+NewTempBPDF <- data.frame(matrix(nrow = 90, ncol = 3))
+
+NewTempBPDF[, 1] <- DayVec
+BPVec <- unlist(BPDataTemp[, 2:7])
+BPVec <- as.numeric(BPVec)
+NewTempBPDF[, 3] <- BPVec
+
+DevDocVec <- c("Dev1", "Dev2", "Dev3", "Doc1", "Doc2", "Doc3")
+
+DevDocList <- rep(DevDocVec, 1, each = 15)
+
+NewTempBPDF[, 2] <- DevDocList
+
+FinalBPDF <- NewTempBPDF
+
+colnames(FinalBPDF) <- c("Day", "Dev/Doc", "BP")
+```
+
+## Problem 8
+
+```{r echo = FALSE}
+
+FigNewt <- function(StartX0, tolerance){
+  # This is a function to solve an equation using Newton's method to a specific degree.
+  # 
+  # Arguments:
+  #   StartX0: The given starting x0 used to start Newton's method
+  #   Tolerance: The degree to which the function needs to stop iterating
+  #
+  # Returns:
+  #   A data frame containing all iteration steps of Newton's method
+  #   Plots the iterations on the path to the solution
+  
+  DefaultEQ <- function(x) {
+    eq <- (3^x) + sin(x) + cos(5*x)
+    eq
+    }
+  
+  # Plan:
+  #   1. Set up a while loop, while the last answer-this answer is greater than the tolerance for Newton's Method
+  #   2. Set up Newton's Method in the loop
+  #   3. Save a dataframe with all the points of the approximator, and the x's used
+  #   4. At the end of the loop plot the function and then the points with x0, x1, ..., xn used to approximate the function
+  k <- 2
+  Xlist = list()
+  Xlist[1] <- StartX0
+  Xlist[2] <- StartX0 - (DefaultEQ(StartX0) / Deriv(DefaultEQ(StartX0)))
+  
+  while(tolerance < abs((Xlist[k] - Xlist[k-1]))) {
+    Xlist[k] <- Xlist[k-1] - (DefaultEQ(Xlist[k-1]) / Deriv(DefaultEQ(Xlist[k-1])))
+      k <- k + 1
+  }
+  tail(Xlist, n = 1)
+}
+
+```
+
+## Problem 9 
+
+```{r echo = FALSE}
+
+########################### 
+#Problem7_Car_analysis  
+#get data  
+########################### 
+
+Car_Gebreken_raw <- read.csv("Open_Data_RDW__Gebreken.csv",stringsAsFactors = F, nrows=200, header=T,quote = '"')
+Car_Geconstat_raw <- read.csv("Open_Data_RDW__Geconstateerde_Gebreken.csv", stringsAsFactors = F, nrows=200, header=T)
+Car_Person_raw <- read.csv("Personenauto_basisdata.csv",stringsAsFactors = F, nrows=200, header=T)
+    
+Car_Gebreken_raw.colclass <- sapply(Car_Gebreken_raw,class)
+Car_Geconstat_raw.colclass <- sapply(Car_Geconstat_raw,class)
+Car_Person_raw.colclass <- sapply(Car_Person_raw,class)
+    
+print("Gebreken")
+print(Car_Gebreken_raw.colclass)
+
+print("Geconstat")
+print(Car_Geconstat_raw.colclass)
+
+print("Personen")
+print(Car_Person_raw.colclass)
+
+#this had the defect code and description
+Car_Gebreken_select <- fread(input = "Open_Data_RDW__Gebreken.csv", header = T, select=c(1,6), showProgress=F)
+#this has the license plate, inspection date and defect code
+Car_Geconstat_select <- fread(input = "Open_Data_RDW__Geconstateerde_Gebreken.csv", header=T, select=c(1,3,5),showProgress=F)
+#this has the license plate, make and model of vehicle
+Car_Person_select <- fread(input = "Personenauto_basisdata.csv", header=T, showProgress = F, select = c(1,3,4))
+    
+Car_Geconstat_select_2017 <- Car_Geconstat_select[grep("2017",Car_Geconstat_select$"Meld datum door keuringsinstantie"),]
+    ########################### 
+
+# Merge by license plate and defect code
+# 
+
+```
