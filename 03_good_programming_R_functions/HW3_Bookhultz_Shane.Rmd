@@ -1,7 +1,7 @@
 ---
 title: "Homework 3 STAT 5014"
 author: "Shane Bookhultz"
-date: "September 14, 2017"
+date: "September 20, 2017"
 output: pdf_document
 ---
 
@@ -22,9 +22,13 @@ library(dplyr)
 library(vioplot)
 library(Deriv)
 library(data.table)
+library(knitr)
+library(stargazer)
 
 suppressMessages(library(tidyr))
 suppressMessages(library(dplyr))
+
+options(warn=-1)
 
 ```
 
@@ -38,7 +42,7 @@ From the messages in my HW2 code, lintr noticed around 80 errors. Most of them w
 
 ## Problem 6
 
-```{r echo = FALSE}
+```{r echo = FALSE, comment = NA}
 
 SumStats <- function(dev1, dev2) {
   # Creates summary stats for vectors dev1 and dev 2
@@ -80,21 +84,25 @@ for (i in  1:13) {
 
 ObsTable <- bind_rows(ObsList)
 
-print(ObsTable)
+ObsNewTable <- cbind(seq(1,13,1), ObsTable)
+
+colnames(ObsNewTable) <- c("Observer", "Mean of Dev1", "Mean of Dev2", "Sd of Dev1", "Sd of Dev2", "Correlation") 
+
+kable(ObsNewTable)
 
 ##### b. Boxplot of all means
 
 par(mfrow = c(1,2))
-boxplot(ObsTable$mean.dev1)
-boxplot(ObsTable$mean.dev2)
+boxplot(ObsTable$mean.dev1, main = "Boxplot of Dev1")
+boxplot(ObsTable$mean.dev2, main = "Boxplot of Dev2")
 
 ##### c. Violin plot of sd of dev 1 and sd of dev2
 
 par(mfrow = c(1,2))
 vioplot(ObsTable$sd.dev1, col = "Red")
+title("Violin plot of Dev1")
 vioplot(ObsTable$sd.dev2, col = "Blue")
-
-#### Bwahaha I made it black so you can't see the boxplot inside
+title("Violin plot of Dev2")
 ```
 
 ## Problem 7
@@ -141,6 +149,8 @@ FinalBPDF <- NewTempBPDF
 colnames(FinalBPDF) <- c("Day", "Dev/Doc", "BP")
 ```
 
+In this BloodPressure dataset, I read in the data as a csv file seperated by spaces. From there I split up the data into a Day vector, a BloodPressure vector, and a vector that had values from Dev1 to 3 and Doc1 to 3. Then, I replicated the DevDoc vector so it would be the same length as the BP vector and Day vector (90 length). Then I added them all to a data frame and renamed the columns. 
+
 ## Problem 8
 
 ```{r echo = FALSE}
@@ -167,17 +177,44 @@ FigNewt <- function(StartX0, tolerance){
   #   3. Save a dataframe with all the points of the approximator, and the x's used
   #   4. At the end of the loop plot the function and then the points with x0, x1, ..., xn used to approximate the function
   k <- 2
-  Xlist = list()
+  Xlist = vector(length = 100000)
   Xlist[1] <- StartX0
-  Xlist[2] <- StartX0 - (DefaultEQ(StartX0) / Deriv(DefaultEQ(StartX0)))
+  Xlist[2] <- StartX0 - (DefaultEQ(StartX0) / deriv(DefaultEQ(x), "x"))
   
   while(tolerance < abs((Xlist[k] - Xlist[k-1]))) {
-    Xlist[k] <- Xlist[k-1] - (DefaultEQ(Xlist[k-1]) / Deriv(DefaultEQ(Xlist[k-1])))
+    Xlist[k] <- Xlist[k-1] - (DefaultEQ(Xlist[k-1]) / deriv(DefaultEQ(Xlist[k-1]), "x"))
       k <- k + 1
   }
   tail(Xlist, n = 1)
 }
 
+####### Code above was not working, so I found a Newton's method online
+
+f <- function(x) {(3^x) + sin(x) + cos(5*x) }
+
+newton <- function(f, tol=1E-12,x0=1,N=20) {
+        h <- 0.001
+        i <- 1; x1 <- x0
+        p <- numeric(N)
+        while (i<=N) {
+                df.dx <- (f(x0+h)-f(x0))/h
+                x1 <- (x0 - (f(x0)/df.dx))
+                p[i] <- x1
+                i <- i + 1
+                if (abs(x1-x0) < tol) break
+                x0 <- x1
+        }
+        return(p[1:(i-1)])
+}
+###### Taken from http://www.theresearchkitchen.com/archives/642
+
+FigNewtVec <- newton(f)
+FigNewtTable <- cbind(seq(1,length(FigNewtVec),1), FigNewtVec)
+
+colnames(FigNewtTable) <- c("Number of iterations", "x(iterations)")
+kable(FigNewtTable)
+
+# Not sure how to do the plot, maybe something with the vector containing x(s).
 ```
 
 ## Problem 9 
@@ -197,24 +234,13 @@ Car_Gebreken_raw.colclass <- sapply(Car_Gebreken_raw,class)
 Car_Geconstat_raw.colclass <- sapply(Car_Geconstat_raw,class)
 Car_Person_raw.colclass <- sapply(Car_Person_raw,class)
     
-print("Gebreken")
-print(Car_Gebreken_raw.colclass)
-
-print("Geconstat")
-print(Car_Geconstat_raw.colclass)
-
-print("Personen")
-print(Car_Person_raw.colclass)
-
 #this had the defect code and description
 Car_Gebreken_select <- fread(input = "Open_Data_RDW__Gebreken.csv", header = T, select=c(1,6), showProgress=F)
 #this has the license plate, inspection date and defect code
 Car_Geconstat_select <- fread(input = "Open_Data_RDW__Geconstateerde_Gebreken.csv", header=T, select=c(1,3,5),showProgress=F)
 #this has the license plate, make and model of vehicle
-Car_Person_select <- fread(input = "Personenauto_basisdata.csv", header=T, showProgress = F, select = c(1,3,4))
+Car_Person_select <- fread(input = "Personenauto_basisdata.csv", header=T, select = c(1,3,4), showProgress = F)
 
-
-# This statement above also returns an error for reading in the data for me  
   
 Car_Geconstat_select_2017 <- Car_Geconstat_select[grep("2017",Car_Geconstat_select$"Meld datum door keuringsinstantie"),]
     ########################### 
@@ -222,4 +248,137 @@ Car_Geconstat_select_2017 <- Car_Geconstat_select[grep("2017",Car_Geconstat_sele
 # Merge by license plate and defect code
 # 
 
+LicPlateData <- inner_join(Car_Geconstat_select_2017, Car_Person_select, by = "Kenteken")
+
+# Merge defect code
+
+FullCarData <- inner_join(LicPlateData, Car_Gebreken_select, by = "Gebrek identificatie")
+
+# Clean data and remove Na
+
+# Only NA's in Handelsbenaming (trade name) (58)
+# Convert from Dutch to english colnames
+colnames(FullCarData) <- c("License Plate", "Report Date by inspection authority", "Lack of identification", "Brand", "Trade Name", "Deficiency_description")
+
+# number of unique brands
+
+NumBrands <- length(unique(FullCarData$Brand))
+
+# number of unique models
+
+NumModels <- length(unique(FullCarData$`Trade Name`))
+
+# number of unique brands + models
+
+NumBrandsModels <- length(unique(c(FullCarData$Brand, FullCarData$`Trade Name`)))
+
+# e. 
+
+# Table of 5 most frequent defects, top make and model that has that defect
+
+length(unique(FullCarData$`Deficiency description`))
+
+tablecount <- dplyr::count(FullCarData, Deficiency_description)
+
+attach(tablecount)
+
+tablecount <- tablecount[order(-n), ]
+
+ConciseTableDeficient <- tablecount[1:5, ]
+
+detach(tablecount)
+# Now I'm going to convert to english
+
+Top5defects <- c(ConciseTableDeficient[1:5,1])
+
+# Now to go through and find the cars that have these defects
+
+#count(FullCarData, FullCarData$Brand, wt = ConciseTableDeficient[1,1])
+
+MostFreqDefects <- c("Tire(s) present with a profile depth of 1.6 to 2.5 mm", "Operation/Condition Required Light/ Retroreflector 5*.55", "Excessive oil leakage", "Tire insufficient profile", "Mechanical parts of the braking system show wear")
+
+
+Deftable <- cbind(seq(1,5,1), MostFreqDefects, ConciseTableDeficient[,2])
+
+colnames(Deftable) <- c("Number", "Most Frequent Defects", "Occurances")
+
+kable(Deftable)
+
+# I know I can do this part with a for loop, but for time sake I will do it 5 times
+
+MakeModelData1 <- subset(FullCarData, FullCarData$Deficiency_description == tablecount$Deficiency_description[1])
+
+MakeModelData2 <- subset(FullCarData, FullCarData$Deficiency_description == tablecount$Deficiency_description[2])
+
+MakeModelData3 <- subset(FullCarData, FullCarData$Deficiency_description == tablecount$Deficiency_description[3])
+
+MakeModelData4 <- subset(FullCarData, FullCarData$Deficiency_description == tablecount$Deficiency_description[4])
+
+MakeModelData5 <- subset(FullCarData, FullCarData$Deficiency_description == tablecount$Deficiency_description[5])
+
+# Now to get the most common brand out of these dataframes
+
+MakeModelData1count <- dplyr::count(MakeModelData1, Brand)
+MakeModelData2count <- dplyr::count(MakeModelData2, Brand)
+MakeModelData3count <- dplyr::count(MakeModelData3, Brand)
+MakeModelData4count <- dplyr::count(MakeModelData4, Brand)
+MakeModelData5count <- dplyr::count(MakeModelData5, Brand)
+
+
+Make1 <- MakeModelData1count$Brand[MakeModelData1count$n == max(MakeModelData1count$n)]
+Make2 <- MakeModelData2count$Brand[MakeModelData2count$n == max(MakeModelData2count$n)]
+Make3 <- MakeModelData3count$Brand[MakeModelData3count$n == max(MakeModelData3count$n)]
+Make4 <- MakeModelData4count$Brand[MakeModelData4count$n == max(MakeModelData4count$n)]
+Make5 <- MakeModelData5count$Brand[MakeModelData5count$n == max(MakeModelData5count$n)]
+
+MakeVec <- c(Make1, Make2, Make3, Make4, Make5)
+
+Defmatrix <- cbind(MakeVec, MostFreqDefects)
+
+colnames(Defmatrix) <- c("Make", "Frequent Defects")
+kable(Defmatrix)
+
+# f. 
+
+# calculate number of defects per make of car
+
+DefectsPerCarMat <- FullCarData[ ,4]
+
+OneVector <- rep(1, times = length(DefectsPerCarMat))
+DefectsPerCarMat <- data.frame(cbind(DefectsPerCarMat, OneVector))
+
+colnames(DefectsPerCarMat) <- c("Make", "n")
+
+DefectsPerCarMat <- DefectsPerCarMat[ , 1:2]
+
+DefectsPerCarMat <- dplyr::count(DefectsPerCarMat, Make)
+
+SmallDefects <- DefectsPerCarMat[c(58, 67, 100), ]
+
+MakeReg <- lm(SmallDefects$nn ~ SmallDefects$Make)
+
+stargazer(MakeReg, type = "text")
+capture.output(summary(aov(MakeReg)))
+
+# g. 
+
+DefectsPerCarModel <- FullCarData[ ,5]
+OneVector2 <- rep(1, times = length(DefectsPerCarModel))
+
+DefectsPerCarModel <- data.frame(cbind(DefectsPerCarModel, OneVector2))
+
+colnames(DefectsPerCarModel) <- c("Model", "n")
+
+DefectsPerCarModel <- DefectsPerCarModel[ , 1:2]
+
+DefectsPerCarModel <- dplyr::count(DefectsPerCarModel, Model)
+
+SmallDefects2 <- DefectsPerCarModel[c(44, 66, 99), ]
+
+MakeReg2 <- lm(SmallDefects2$nn ~ SmallDefects2$Model)
+
+stargazer(MakeReg2, type = "text")
+capture.output(summary(aov(MakeReg2)))
 ```
+
+h. Overall for this workflow I made a bunch of datasets and created many allocations in memory dedicated to these datasets. Initally I just read in the data and only selected the cars that were brought in in 2017. From there, I inner_joined the 3 datasets togethe based on license plate and defect code. I called this the FullCarData, and from there I checked for NA's and there were only NA's in the Make/Model column (58/~400000). I converted the column names to english and renamed the column names. Then I created a table of the top 5 occuring defect, translated them to english and put them in a table from 1 to 5. Next, I found the car model that each has the occuring defect most, and put that in a table. In addition, I did the same procedure but with model. Lastly, I created a categorical regression model with the make of the car on the x against number of times the defect came up on the y. I did the same with model. Overall, I could be definitely more computationally efficient. I could create more for loops, stop the intermediate data creation steps, and create more concise names. This problem took up a large amount of data as I read in gigabyte large files, and compiled them together into another created data file, probably taking up at least 3 gigabytes of memory. 
