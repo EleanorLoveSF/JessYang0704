@@ -1,0 +1,84 @@
+---
+title: "HW4 STAT 5014"
+author: "Shane Bookhultz"
+date: "September 25, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo = F}
+library(xlsx)
+library(knitr)
+library(ggplot2)
+library(GGally)
+library(dplyr)
+```
+
+
+## Problem 3
+
+The focus of the Exploratory Data Analysis (EDA) stage of analysis is to refine the question/hypothesis, and then from there to know which modeling techniques to use.
+
+## Problem 4 
+
+```{r echo = F}
+
+prob4_data1 <- read.xlsx("HW4_data.xlsx", sheetIndex = 1)
+
+# need to show summary stats
+# need to show a factor exploration
+# create a couple multipanel plots using either lattice, ggplot2, or baseR
+# correlation plots, pairs, plotcorr
+
+ls(prob4_data1)
+lapply(prob4_data1, class)
+SumProb4Data <- summary(prob4_data1)
+
+prob4_data1$block <- factor(prob4_data1$block)
+
+kable(SumProb4Data)
+
+# showed summary stats, gave a bit of factor explanation
+
+# first create a scatter plot in ggplot2 based on factor groups
+
+plot <- ggplot(prob4_data1, aes(depth, phosphate))
+
+plot + geom_point(aes(colour = factor(block)), size = 1)
+
+# now multipanel plot
+attach(prob4_data1)
+pairs(depth~phosphate) # R squared is 0.004
+
+hist(depth)
+hist(phosphate)
+boxplot(depth)
+boxplot(phosphate)
+
+ggplot(prob4_data1, aes(x=depth, y=phosphate, fill = block)) + geom_boxplot()
+
+ggplot(prob4_data1, aes(depth, phosphate, color = block)) + geom_point() + facet_wrap( ~ block)
+
+ggcorr(prob4_data1)
+
+# because I can't find a correlation plot that separates by factor, I will create 8 separate data sets
+detach(prob4_data1)
+# prob4_data1.1 <- filter(prob4_data1, block == 1)
+# prob4_data1.4 <- filter(prob4_data1, block == 4)
+# prob4_data1.5 <- filter(prob4_data1, block == 5)
+# prob4_data1.6 <- filter(prob4_data1, block == 6)
+# prob4_data1.7 <- filter(prob4_data1, block == 7)
+# prob4_data1.10 <- filter(prob4_data1, block == 10)
+# prob4_data1.11 <- filter(prob4_data1, block == 11)
+# prob4_data1.13 <- filter(prob4_data1, block == 13)
+
+pairs(prob4_data1)
+
+```
+
+All 3 are numeric variables, but I converted block to a factor variable since it will be easier to see them as factors.
+
+The lesosn in this dataset when considering the summary statistics and plots is that this data is meaningless and when seperated by block shows nice pictures.
