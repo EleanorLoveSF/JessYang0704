@@ -1,0 +1,164 @@
+---
+title: "HW5 STAT 5014"
+author: "Shane Bookhultz"
+date: "October 1, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo = F}
+
+library(data.table)
+library(stringr)
+library(knitr)
+library(dplyr)
+library(downloader)
+library(ggplot2)
+library(fiftystater)
+
+```
+
+
+## Problem 3
+
+What goes into making a good figure?
+*Easy to comprehend
+*Contains important information
+*Makes a meaningful connection
+*Able to be understood from all backgrounds
+
+## Problem 4
+
+```{r echo = F}
+
+# a. Create a function that computes the proportion of successes in a vector
+
+function Successes(vec1, numsuc = 1) {
+  # This is a function that takes in a vector and a number that they want to be the success of and returns the proportion of successes in the vector
+  # vec1 is the vector it checks in
+  # numsuc is the number that we want to see how many of them there are
+  
+  
+}
+
+```
+
+## Problem 5 
+
+```{r echo = F}
+
+StarchData <- read.table("http://www2.isye.gatech.edu/~jeffwu/book/data/starch.dat", header = T, sep = "", stringsAsFactors = F)
+
+
+kable(StarchData)
+
+MeanStrengthCA <- mean(StarchData[,][2])
+
+StrengthMean <- aggregate(strength~starch, StarchData, FUN = mean)
+ThickMean <- aggregate(thickness~starch, StarchData, FUN = mean)
+
+BetterViewMean <- inner_join(StrengthMean, ThickMean, by = "starch")
+
+colnames(BetterViewMean) <- c("Starch", "StrengthMean", "ThicknessMean")
+
+kable(BetterViewMean)
+
+StarchData[,1] <- as.factor(StarchData[,1])
+
+pairs(StarchData)
+
+StarchModel <- lm(StarchData$strength ~ StarchData$starch + StarchData$thickness)
+
+summary(StarchModel)
+```
+
+## Problem 6
+
+```{r echo = F}
+
+#we are grabbing a SQL set from here
+#http://www.farinspace.com/wp-content/uploads/us_cities_and_states.zip
+
+#download the files, looks like it is a .zip
+download("http://www.farinspace.com/wp-content/uploads/us_cities_and_states.zip",dest="us_cities_states.zip")
+unzip("us_cities_states.zip")
+    
+#read in data, looks like sql dump, blah
+states <- fread(input = "./us_cities_and_states/states.sql",sep = "'", sep2 = ",", header = F, select = c(2,4))
+### YOU do the CITIES
+### I suggest the cities_extended.sql may have everything you need
+### can you figure out how to limit this to the 50?
+# Why did you skip the 4 other states?
+cities <- fread(input = "./us_cities_and_states/cities_extended.sql", sep = "'", sep2 = ",", header = F, select = c(2,4))
+
+colnames(states) <- c("State Name", "State Abbv.")
+colnames(cities) <- c("City", "State Abbv.")
+
+citystate <- inner_join(cities, states, by = "State Abbv.")
+
+statesum = table(citystate$`State Name`)
+Numcitystate = as.data.frame(statesum)
+
+colnames(Numcitystate) <- c("State Name", "Freq")
+
+kable(Numcitystate)
+
+# c. 
+
+OccurLetter <- function (letter, state_name){
+  # A function that counts the number of occurances of a letter in a string (state_name)
+  # Output is a number with the count for that one letter
+  # letter is a character
+  # state_name is a string
+  return (str_count(state_name, letter))
+}
+
+# loop through states
+
+letter_count <- data.frame(matrix(NA,nrow = 51, ncol = 26))
+
+for(k in 1:nrow(states)){
+  # current statename is states[i]
+  for(j in 1:26) {
+    letter_count[k,j] <- OccurLetter(letters[j], states[k,1]) 
+  }
+}
+
+colnames(letter_count) <- letters
+
+##### Having problem here
+
+# Brings up this error: Error in `row.names<-.data.frame`(`*tmp*`, value = value) : 
+#invalid 'row.names' length
+
+rownames(letter_count) <- states[,1]
+
+##### End 
+
+####### Plotting map
+
+#https://cran.r-project.org/web/packages/fiftystater/vignettes/fiftystater.html
+
+    
+data("fifty_states") # this line is optional due to lazy data loading
+crimes <- data.frame(state = tolower(rownames(USArrests)), USArrests)
+# map_id creates the aesthetic mapping to the state name column in your data
+p <- ggplot(crimes, aes(map_id = state)) + 
+  # map points to the fifty_states shape data
+  geom_map(aes(fill = Assault), map = fifty_states) + 
+  expand_limits(x = fifty_states$long, y = fifty_states$lat) +
+  coord_map() +
+  scale_x_continuous(breaks = NULL) + 
+  scale_y_continuous(breaks = NULL) +
+  labs(x = "", y = "") +
+  theme(legend.position = "bottom", 
+        panel.background = element_blank())
+    
+p
+#ggsave(plot = p, file = "HW5_Problem6_Plot_Settlage.pdf")
+
+```
+
