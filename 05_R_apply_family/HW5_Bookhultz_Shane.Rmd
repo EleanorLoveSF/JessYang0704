@@ -1,7 +1,7 @@
 ---
 title: "HW5 STAT 5014"
 author: "Shane Bookhultz"
-date: "October 1, 2017"
+date: "October 4, 2017"
 output: pdf_document
 ---
 
@@ -32,16 +32,50 @@ What goes into making a good figure?
 
 ## Problem 4
 
+
+a. This function successes makes a proportion of success from a vector of 1's and 0's and converts it to a proportion.
+
 ```{r echo = F}
 
-# a. Create a function that computes the proportion of successes in a vector
-
-function Successes(vec1, numsuc = 1) {
+Successes <- function(vec1) {
   # This is a function that takes in a vector and a number that they want to be the success of and returns the proportion of successes in the vector
   # vec1 is the vector it checks in
   # numsuc is the number that we want to see how many of them there are
+  temp <- length(which(vec1 == 1))
   
-  
+  return (temp/length(vec1))
+}
+
+```
+b. Create a matrix to simulate 10 flips of a coin with varying degrees of "fairness"
+
+```{r echo = F}
+
+set.seed(22495)
+Flips10bino <- matrix(rbinom(10, 1, prob = (30:40)/100), nrow = 10, ncol = 10)
+
+```
+
+c. Use the function in conjunction with apply to compute successes by column and then row
+
+```{r echo = F}
+
+colprob <- apply(Flips10bino, 2, FUN = Successes)
+rowprob <- apply(Flips10bino, 1, Successes)
+
+```
+
+What I notice here is that the column probabilities are all the same decimal value, but the row probabilities are all either 1's or 0's. 
+
+d. Fix the matrix by creating a function whose input is a probability and output is a vector whose elements are the outcomes of 10 flips of a coin. 
+
+```{r echo = F}
+
+# not sure how to do this one
+
+Flips10outcomes <- function(probability) {
+
+  return (vec2)
 }
 
 ```
@@ -94,15 +128,15 @@ states <- fread(input = "./us_cities_and_states/states.sql",sep = "'", sep2 = ",
 # Why did you skip the 4 other states?
 cities <- fread(input = "./us_cities_and_states/cities_extended.sql", sep = "'", sep2 = ",", header = F, select = c(2,4))
 
-colnames(states) <- c("State Name", "State Abbv.")
-colnames(cities) <- c("City", "State Abbv.")
+colnames(states) <- c("StateName", "StateAbbv")
+colnames(cities) <- c("City", "StateAbbv")
 
-citystate <- inner_join(cities, states, by = "State Abbv.")
+citystate <- inner_join(cities, states, by = "StateAbbv")
 
-statesum = table(citystate$`State Name`)
+statesum = table(citystate$StateName)
 Numcitystate = as.data.frame(statesum)
 
-colnames(Numcitystate) <- c("State Name", "Freq")
+colnames(Numcitystate) <- c("StateName", "Freq")
 
 kable(Numcitystate)
 
@@ -121,22 +155,16 @@ OccurLetter <- function (letter, state_name){
 letter_count <- data.frame(matrix(NA,nrow = 51, ncol = 26))
 
 for(k in 1:nrow(states)){
-  # current statename is states[i]
   for(j in 1:26) {
-    letter_count[k,j] <- OccurLetter(letters[j], states[k,1]) 
+   letter_count[k,j] <- OccurLetter(letters[j], states[k,1]) 
   }
 }
 
 colnames(letter_count) <- letters
 
-##### Having problem here
+rownames(letter_count) <- states$StateName
 
-# Brings up this error: Error in `row.names<-.data.frame`(`*tmp*`, value = value) : 
-#invalid 'row.names' length
-
-rownames(letter_count) <- states[,1]
-
-##### End 
+# I don't know how to use the apply function with this
 
 ####### Plotting map
 
