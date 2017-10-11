@@ -1,0 +1,159 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r echo = F}
+####### Libraries and functions
+library(knitr)
+
+```
+
+
+
+Problem 2. Sums of squares
+
+```{r echo = F}
+set.seed(12345)
+y <- seq(from = 1, to = 100, length.out = 1e+08) + rnorm(1e+08)
+```
+
+```{r echo = F}
+## Just so we don't have to rerun the data many times
+#a. For loop to iterate through all data points calculating the summed squared difference between the data points and mean of the data
+
+meany <- mean(y)
+
+
+SSvec <- vector()
+
+system.time({for(i in 1:length(y)){
+  SSvec[i] <- (y[i] - meany)^2
+}
+  Sum1 <- sum(SSvec)
+})
+rm(i)
+Timematrix <- data.frame(matrix(c(28.3, 3.86, 32.17), nrow = 1, ncol = 3))
+
+colnames(Timematrix) <- c("User", "System", "Elapsed")
+```
+
+```{r echo = F}
+#b. repeat A but use vector operations
+
+SSvec2 <- vector()
+
+system.time({SSvec2 <- sum((y-meany)^2)})
+
+Timematrix <- rbind(Timematrix, c(0.37, 0.14, 0.51))
+rownames(Timematrix) <- c("2a", "2b")
+kable(Timematrix)
+```
+Problem 3
+
+```{r echo = F}
+set.seed(1256)
+theta <- as.matrix(c(1,2), nrow = 2)
+X <- cbind(1, rep(1:10, 10))
+Y <- X %*% theta + rnorm(100, 0, 0.2)
+m <- length(Y)
+
+alpha <- 0.01
+tolerance <- .00001
+
+theta[1:2,1] <- c(0,0)
+
+# this is theta zero
+theta[1] <- -(alpha)*(1/m)*(sum(theta[1] + theta[2]*X[1] - Y[1]))
+
+# this is theta one
+theta[2] <- -(alpha)*(1/m)*(sum(theta[1] + theta[2]*X[1] - Y[1])*(X[1]))
+
+currenttheta <- as.matrix(c(theta[1], theta[2]), nrow = 2)
+
+lasttheta <- as.matrix(c(0,0), nrow = 2)
+
+for(k in 2:m) {
+  while(abs(currenttheta[1] - lasttheta[1]) && abs(currenttheta[2] - lasttheta[2]) > tolerance) {
+    
+    lasttheta <- currenttheta
+    
+    currenttheta[1] <- lasttheta[1]-(alpha)*(1/m)*(sum(lasttheta[1] + lasttheta[2]*X[k] - Y[k]))
+    
+    currenttheta[2] <- lasttheta[2]-(alpha)*(1/m)*(sum(lasttheta[1] + lasttheta[2]*X[k] - Y[k])*X[k])
+  }
+}
+
+print(currenttheta)
+```
+
+```{r echo = F}
+
+lm(Y~0+X)
+
+```
+
+My answers are different than the model and I'm not sure why because I used a similar method to what you proposed and my coefficients are around 2.5 and the models are around 1 and 2. 
+
+
+Problem 4:
+
+How do we create the Beta hat matrix? If someone was to create the Beta hat matrix in r, they would most likely to compute the inverse by solve(t(x) %*% x) %*% (x %*% y). However, this would take a longer time because of the inverse operations. Therefore, we won't worry about the inverted matrix at all and just computer solve(t(x) %*% x, t(x) %*% y) and just let the solve command take control of the entire matrix.
+
+Inside the first statement, we are mathematically multiplying the transpose of x multiplied by x, then inverted the whole matrix, taking more than double the time it needs to just multiply matrices, then multiplying two large matrices with this. When x is a small matrix this is easy to compute, however with a large matrix, the running time increases exponentially. The better method, the second one, involves multiplying both sides of the equation by x transpose x, to eliminate need to compute an inverse and just uses one solve statement, saving more time. 
+
+Problem 5:
+
+```{r echo = F}
+set.seed(12456)
+G <- matrix(sample(c(0, 0.5, 1), size = 16000, replace = T), ncol = 10) 
+R <- cor(G) # R: 10 * 10 correlation matrix of G 
+C <- kronecker(R, diag(1600)) # C is a 16000 * 16000 block diagonal matrix 
+id <- sample(1:16000, size = 932, replace = F) 
+q <- sample(c(0, 0.5, 1), size = 15068, replace = T) # vector of length 15068 
+A <- C[id, -id] # matrix of dimension 932 * 15068 
+B <- C[-id, -id] # matrix of dimension 15068 * 15068 
+p <- runif(932, 0, 1) 
+r <- runif(15068, 0, 1) 
+C <- NULL #save some memory space
+
+#system.time({yQ5 <- p + (A %*% solve(B))*(q-r)}) 
+
+# It took 126.33 system 0.00 elapsed 126.44
+
+object.size(A)
+object.size(B)
+
+```
+
+a. A is 112347208 bytes, B is 1816357192 bytes, which is 112 Megabytes, and B is 1816 Megabytes or 1.81 Gigabytes. 
+
+Without any optimization tricks, it takes 824.07 user seconds, 1.03 system seconds, and 831.53 elapsed seconds to calculate y.
+
+b. If I were to break up the y statement, using the logic from question 4 and from John Cook, I would start by subtracting p from both sides, and multiplying by AB to cancel out the inverse. From there I would multiply out the AB to the (y-p), then move ABp to the right side, and then apply the solve statement for y. 
+
+Additionally, you could multiply in the q-r to the A and B inverse matrix subtract p from both sides and then multiply by B inverse. 
+
+In order to save yourself some time at the end, you could remove the R, G matrices, and the id and q vectors.
+
+c. 
+```{r echo = F}
+
+# y <- p + AB^-1(q-r)
+
+# system.time({
+#   AB<-A%*%solve(B)
+# })
+
+# I tried to seperate the matrix here, and I'm not sure how to seperate the matrices to have it literally take seconds to compute.
+
+# this doesn't work because A%*%B isn't square
+
+
+```
+
+## Appendix
+
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60), }
+
+```
